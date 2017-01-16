@@ -14,7 +14,11 @@
 .products {
 	background-color: $theme-primary;
 }
-
+section.success {
+	background: #fff;
+	color: $gray;
+}
 header img {
 	margin-bottom: 50px;
 }
+

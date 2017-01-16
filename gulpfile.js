@@ -46,13 +46,13 @@ gulp.task('scripts', function() {
 
 /* SASS task */
 gulp.task('sass', function() {
-    gulp.src('scss/style.scss')
+    gulp.src('sass/styles.scss')
     .pipe(plumber())
     .pipe(sass({
-        includePaths: ['sass'].concat(neat)
+        includePaths: ['scss'].concat(neat)
     }))
     .pipe(gulp.dest('css'))
-    .pipe(rename({suffax: '.min'}))
+    .pipe(rename({suffix: '.min'}))
     .pipe(gulp.dest('css'))
     /* Reload the browser CSS after every change */
     .pipe(reload({stream:true}));
@@ -73,27 +73,8 @@ gulp.task('browser-sync', function() {
     });
 });
 
-
-// Copy vendor libraries from /node_modules into /vendor
-gulp.task('copy', function() {
-    gulp.src(['node_modules/bootstrap/dist/**/*', '!**/npm.js', '!**/bootstrap-theme.*', '!**/*.map'])
-        .pipe(gulp.dest('vendor/bootstrap'));
-
-    gulp.src(['node_modules/jquery/dist/jquery.js', 'node_modules/jquery/dist/jquery.min.js'])
-        .pipe(gulp.dest('vendor/jquery'));
-
-    gulp.src([
-            'node_modules/font-awesome/**',
-            '!node_modules/font-awesome/**/*.map',
-            '!node_modules/font-awesome/.npmignore',
-            '!node_modules/font-awesome/*.txt',
-            '!node_modules/font-awesome/*.md',
-            '!node_modules/font-awesome/*.json'
-        ])
-        .pipe(gulp.dest('vendor/font-awesome'));
-});
 // Watch sass, js and html files, doing different things with each
-gulp.task('default', ['copy', 'sass', 'browser-sync'], function() {
+gulp.task('default', ['sass', 'browser-sync'], function() {
     gulp.watch(['sass/*.scss', 'scss/**/*.scss'], ['sass']);
     gulp.watch(['js/freelancer.js'], ['scripts']);
     gulp.watch(['*.html'], ['bs-reload']);
