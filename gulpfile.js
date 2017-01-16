@@ -1,17 +1,18 @@
 var gulp = require('gulp');
-var browserSync = require('browser-sync').create();
+var browserSync = require('browser-sync');
 var header = require('gulp-header');
-var cleanCSS = require('gulp-clean-css');
+var minifycss = require('gulp-clean-css');
 var rename = require("gulp-rename");
 var uglify = require('gulp-uglify');
 var pkg = require('./package.json');
 var sass = require('gulp-sass');
 var autoprefixer = require('gulp-autoprefixer');
-var sourcemaps = require('gulp-sourcemaps');
+var notify = require('gulp-notify');
+var concat = require('gulp-concat');
+var plumber = require('gulp-plumber');
+var neat = require('node-neat');
+var reload = browserSync.reload;
 
-var autoprefixerOptions = {
-    browsers: ['last 2 versions', '> 5%', 'Firefox ESR']
-};
 
 // Set the banner content
 var banner = ['/*!\n',
@@ -21,58 +22,57 @@ var banner = ['/*!\n',
     ' */\n',
     ''
 ].join('');
-var sassOptions = {
-    errLogToConsole: true,
-    outputStyle: 'expanded'
+//* Set up scss path */
+var paths = {
+    scss: './sass/*.scss'
+
 };
-var sassdir = './sass/**/*.scss';
-var cssdir = './css';
 
+/* Scripts task */
+gulp.task('scripts', function() {
+    return gulp.src([
+        'js/vendor/jquery-1.11.1.js',
+        'vendor/bootstrap/js/bootstrap.min.js',
+        'js/jqBootstrapValidation.js',
+        'js/contact_me.js',
+        'js/freelancer.min.js'
+        ])
+    .pipe(concat('main.js'))
+    .pipe(gulp.dest('js'))
+    .pipe(rename({ suffix: '.min'}))
+    .pipe(uglify())
+    .pipe(gulp.dest('js'));
+});
 
+/* SASS task */
 gulp.task('sass', function() {
-    return gulp.src([sassdir])
-        .pipe(sass(sassOptions).on('error', sass.logError))
-        .pipe(autoprefixer(autoprefixerOptions))
-        .pipe(gulp.dest('./css'))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-    });
+    gulp.src('scss/style.scss')
+    .pipe(plumber())
+    .pipe(sass({
+        includePaths: ['sass'].concat(neat)
+    }))
+    .pipe(gulp.dest('css'))
+    .pipe(rename({suffax: '.min'}))
+    .pipe(gulp.dest('css'))
+    /* Reload the browser CSS after every change */
+    .pipe(reload({stream:true}));
+});
 
-// Configure the browserSync task
-gulp.task('browserSync', function() {
-    browserSync.init({
+/* Reload Task */
+gulp.task('bs-reload', function() {
+    browserSync.reload();
+
+});
+
+/* Prepare browserSync for localhost */
+gulp.task('browser-sync', function() {
+    browserSync.init(['css/*.css', 'js/*.js'], {
         server: {
-            baseDir: ''
-        },
+            baseDir: './'
+        }
     });
 });
 
-
-// Minify compiled CSS
-gulp.task('minify-css', function() {
-    return gulp.src('css/*.css')
-        .pipe(cleanCSS({ compatibility: 'ie8' }))
-        .pipe(rename({ suffix: '.min' }))
-        .pipe(gulp.dest('./css'))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-    });
-
-
-
-// Minify JS
-gulp.task('minify-js', function() {
-    return gulp.src('js/freelancer.js')
-        .pipe(uglify())
-        .pipe(header(banner, { pkg: pkg }))
-        .pipe(rename({ suffix: '.min' }))
-        .pipe(gulp.dest('js'))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-});
 
 // Copy vendor libraries from /node_modules into /vendor
 gulp.task('copy', function() {
@@ -92,23 +92,11 @@ gulp.task('copy', function() {
         ])
         .pipe(gulp.dest('vendor/font-awesome'));
 });
-
-// Run everything
-gulp.task('default', [ 'sass', 'minify-css', 'minify-js', 'copy']);
-
-
-//tasks that run when you type gulp watch
-gulp.task('watch', ['browserSync', 'sass'], function() {
-    gulp.watch(sassdir, ['sass']);
-    gulp.watch('/css', ['minify-css']);
-    gulp.watch('js/*.js', ['minify-js']);
-    gulp.watch('*.html', browserSync.reload);
-    gulp.watch('js/**/*.js', browserSync.reload)
-
-    //when there is a change, log a message in the console
-    .on('change', function(event) {
-        console.log('File' + event.path + ' was ' + event.type + ' , running tasks...');
-    });
+// Watch sass, js and html files, doing different things with each
+gulp.task('default', ['copy', 'sass', 'browser-sync'], function() {
+    gulp.watch(['sass/*.scss', 'scss/**/*.scss'], ['sass']);
+    gulp.watch(['js/freelancer.js'], ['scripts']);
+    gulp.watch(['*.html'], ['bs-reload']);
 });
 
 
